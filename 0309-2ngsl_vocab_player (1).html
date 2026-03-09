@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NGSL 最重要英単語 2850 音読プレイヤー</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161a24;
+    --surface2: #1e2435;
+    --accent: #4fffb0;
+    --accent2: #00cfff;
+    --text: #e8eaf0;
+    --muted: #6b7694;
+    --en-color: #4fffb0;
+    --jp-color: #00cfff;
+    --pos-color: #ff9f43;
+    --border: #2a3050;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    width: 100%;
+    padding: 18px 24px 14px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  header span {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .main {
+    width: 100%;
+    max-width: 700px;
+    padding: 28px 20px 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Range Selector */
+  .range-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+  }
+
+  .range-card label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .range-inputs select, .range-inputs input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .range-inputs select:focus, .range-inputs input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .range-inputs span { color: var(--muted); font-size: 13px; }
+
+  .btn-set {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: opacity 0.15s;
+  }
+  .btn-set:hover { opacity: 0.85; }
+
+  /* Word Display Card */
+  .word-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 28px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .word-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .word-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+
+  .word-en {
+    font-family: 'Space Mono', monospace;
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--en-color);
+    line-height: 1.1;
+    margin-bottom: 6px;
+    letter-spacing: -1px;
+    transition: opacity 0.2s;
+  }
+
+  .word-pos {
+    font-size: 12px;
+    color: var(--pos-color);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+
+  .word-jp {
+    font-size: 20px;
+    color: var(--jp-color);
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 18px 0;
+  }
+
+  .example-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+  }
+
+  .example-en {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    color: var(--en-color);
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+
+  .example-jp {
+    font-size: 14px;
+    color: var(--jp-color);
+    line-height: 1.7;
+  }
+
+  /* Reading State Indicator */
+  .reading-state {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    min-height: 18px;
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot-pulse {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1s infinite;
+    display: none;
+  }
+  .reading-state.active .dot-pulse { display: block; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  /* Progress */
+  .progress-bar-wrap {
+    background: var(--surface2);
+    border-radius: 4px;
+    height: 4px;
+    width: 100%;
+    margin-top: 18px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  .progress-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 6px;
+  }
+
+  /* Settings */
+  .settings-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .setting-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .setting-item label {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .setting-item select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    min-width: 80px;
+    outline: none;
+  }
+
+  .setting-item select:focus {
+    border-color: var(--accent);
+  }
+
+  .setting-item input[type=range] {
+    accent-color: var(--accent);
+    width: 80px;
+    cursor: pointer;
+  }
+
+  .setting-item .val {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    min-width: 30px;
+  }
+
+  .setting-item input[type=number] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    width: 65px;
+  }
+
+  /* Controls */
+  .controls {
+    position: fixed;
+    bottom: 0;
+    left: 0; right: 0;
+    background: rgba(13,15,20,0.96);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    padding: 16px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: 20;
+  }
+
+  .controls-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .ctrl-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .ctrl-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 700;
+    padding: 10px 28px;
+  }
+  .ctrl-btn.primary:hover { opacity: 0.85; color: #000; }
+
+  .ctrl-btn.danger {
+    border-color: #ff4757;
+    color: #ff4757;
+  }
+  .ctrl-btn.danger:hover { background: #ff4757; color: #fff; }
+
+  .current-info {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* highlight active reading item */
+  .highlight {
+    background: rgba(79,255,176,0.12);
+    border-radius: 6px;
+    padding: 2px 6px;
+    transition: background 0.3s;
+  }
+
+  /* Loop toggle */
+  .toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle-wrap input[type=checkbox] {
+    accent-color: var(--accent);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+  }
+
+  @media (max-width: 480px) {
+    .word-en { font-size: 28px; }
+    .word-jp { font-size: 17px; }
+    .example-en, .example-jp { font-size: 13px; }
+    .main { padding: 20px 12px 140px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>NGSL 音読プレイヤー</h1>
+  <span>最重要英単語2850 — No.2195〜2850</span>
+</header>
+
+<div class="main">
+
+  <!-- Range Selector -->
+  <div class="range-card">
+    <label>📖 学習範囲</label>
+    <div class="range-inputs">
+      <input type="number" id="rangeFrom" value="2195" min="2195" max="2850">
+      <span>〜</span>
+      <input type="number" id="rangeTo" value="2850" min="2195" max="2850">
+      <button class="btn-set" onclick="applyRange()">SET</button>
+      <span id="rangeInfo" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="settings-card">
+    <div class="setting-item">
+      <label>🇯🇵 JP速度</label>
+      <select id="speedJP">
+        <option value="0.5">0.5x</option>
+        <option value="0.7">0.7x</option>
+        <option value="1.0" selected>1.0x</option>
+        <option value="1.25">1.25x</option>
+        <option value="1.5">1.5x</option>
+        <option value="1.75">1.75x</option>
+        <option value="2.0">2.0x</option>
+        <option value="2.5">2.5x</option>
+        <option value="3.0">3.0x</option>
+        <option value="3.5">3.5x</option>
+        <option value="4.0">4.0x</option>
+      </select>
+    </div>
+    <div class="setting-item">
+      <label>🇺🇸 EN速度</label>
+      <select id="speedEN">
+        <option value="0.5">0.5x</option>
+        <option value="0.7">0.7x</option>
+        <option value="1.0">1.0x</option>
+        <option value="1.25">1.25x</option>
+        <option value="1.5" selected>1.5x</option>
+        <option value="1.75">1.75x</option>
+        <option value="2.0">2.0x</option>
+        <option value="2.5">2.5x</option>
+        <option value="3.0">3.0x</option>
+        <option value="3.5">3.5x</option>
+        <option value="4.0">4.0x</option>
+      </select>
+    </div>
+    <div class="setting-item">
+      <label>Pause(ms)</label>
+      <input type="number" id="pauseMs" value="600" min="0" max="3000" step="100">
+    </div>
+    <label class="toggle-wrap">
+      <input type="checkbox" id="loopChk"> ループ
+    </label>
+    <label class="toggle-wrap">
+      <input type="checkbox" id="shuffleChk"> シャッフル
+    </label>
+  </div>
+
+  <!-- Word Card -->
+  <div class="word-card">
+    <div class="word-number" id="wordNumber">No. 2195 / 1 of 656</div>
+    <div class="word-en" id="wordEn">pollution</div>
+    <div class="word-pos" id="wordPos">名詞</div>
+    <div class="word-jp" id="wordJp">汚染</div>
+    <hr class="divider">
+    <div class="example-label">例文</div>
+    <div class="example-en" id="exampleEn">Water pollution is another problem.</div>
+    <div class="example-jp" id="exampleJp">水質汚染も問題です。</div>
+    <div class="reading-state" id="readingState">
+      <div class="dot-pulse"></div>
+      <span id="stateText">READY</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div class="progress-text" id="progressText">0 / 656</div>
+  </div>
+
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <div class="controls-row">
+    <button class="ctrl-btn" onclick="prevWord()">⏮ 前へ</button>
+    <button class="ctrl-btn primary" id="playBtn" onclick="togglePlay()">▶ PLAY</button>
+    <button class="ctrl-btn" onclick="nextWord()">次へ ⏭</button>
+    <button class="ctrl-btn danger" onclick="stopAll()">■ STOP</button>
+  </div>
+  <div class="current-info" id="currentInfo">No.2195 — pollution</div>
+</div>
+
+<script>
+// ===== DATA =====
+const ALL_DATA = [
+[2195,"pollution","名詞","汚染","Water pollution is another problem.","水質汚染も問題です。"],
+[2196,"criterion","名詞","基準","Money is not a criterion of success.","お金は成功の基準ではありません。"],
+[2197,"prison","名詞","刑務所","Does prison reform criminals?","刑務所は犯罪者を更生させるか？"],
+[2198,"trip","名詞","旅行","Round trip or one-way?","往復ですか、片道ですか。"],
+[2199,"gear","名詞","車のギア","A small gear is missing here.","ここには小さな歯車が欠けています。"],
+[2200,"exam","名詞","試験","The exam is easy.","試験は簡単です。"],
+[2201,"explanation","名詞","説明","Your explanation lacks concreteness.","あなたの説明は具体性に欠けます。"],
+[2202,"knee","名詞","膝","My knee is bleeding.","私の膝は出血しています。"],
+[2203,"principle","名詞","原理・原則","Carelessness is his principle feature.","不注意が彼の最大の特徴です。"],
+[2204,"fuel","名詞","燃料","My fuel line broke.","燃料パイプが断れてしまいました。"],
+[2205,"operator","名詞","オペレーター・経営者","Call the operator at 104 then.","それでは104番のオペレーターに電話してください。"],
+[2206,"damage","名詞","損害・損害を与える","The damage is done.","損傷している。"],
+[2207,"pub","名詞","パブ・酒場","There's a pub just around the corner.","すぐ近くにパブがある。"],
+[2208,"saturday","名詞","土曜日","It was Saturday night.","土曜の夜だった。"],
+[2209,"future","名詞","未来","The future is unknowable.","未来はわからない。"],
+[2210,"fee","名詞","料金","There's a fee for admission.","入場料がかかります。"],
+[2211,"youth","名詞","青年時代・若さ・若者","The youth was quiet.","若者は静かだった。"],
+[2212,"bike","名詞","オートバイ・自転車","I bike to work.","私は自転車で通勤しています。"],
+[2213,"leader","名詞","リーダー","I'm the leader here.","ここでは私がリーダーです。"],
+[2214,"danger","名詞","危険","You're in danger here.","ここは危険だ。"],
+[2215,"victory","名詞","勝利","Our victory is secure.","我々の勝利は確実です。"],
+[2216,"gold","名詞","金","Here's a gold coin.","ここに金貨があります。"],
+[2217,"nerve","名詞","神経","His nerve staggered me.","彼の神経は私をよろめかせた。"],
+[2218,"past","名詞","過去・過ぎた","He is past forty.","彼は40歳を越えている。"],
+[2219,"safety","名詞","安全","There's safety in numbers.","数には安全があります。"],
+[2220,"root","名詞","根・根元","Do you like root beer?","ルートビアは好きですか？"],
+[2221,"project","名詞","計画・事業・プロジェクト","The project is underway.","プロジェクトは進行中です。"],
+[2222,"theater","名詞","劇場","Which theater is that?","それはどの劇場ですか？"],
+[2223,"ratio","名詞","比率","What's the student-teacher ratio at your school?","あなたの学校の生徒と教師の比率はどれくらいですか？"],
+[2224,"server","名詞","サーバー","The server was down.","サーバーがダウンしていました。"],
+[2225,"significance","名詞","意義","What's the significance of that?","それはどういう意味ですか？"],
+[2226,"advertisement","名詞","広告","The job advertisement specifically requested young people.","求人広告では特に若い人を求めていました。"],
+[2227,"forecast","名詞","予報","What's the forecast for tomorrow?","明日の予報はどうなっていますか？"],
+[2228,"target","名詞","目標","The target is in sight.","目標は見えています。"],
+[2229,"printer","名詞","プリンター","The printer needs paper.","プリンターの紙が切れています。"],
+[2230,"alcohol","名詞","アルコール飲料","I'll never drink alcohol again.","私は二度と酒を飲まない。"],
+[2231,"section","名詞","部分・区間","The section chief altered the plan.","課長は計画を変更した。"],
+[2232,"conclusion","名詞","結論・締結","The conclusion is biased.","その結論は偏っている。"],
+[2233,"court","名詞","コート・裁判所","The court found him guilty.","裁判所は彼を有罪とした。"],
+[2234,"cover","名詞","蓋・覆う","I'll cover for you.","私があなたの代わりをします。"],
+[2235,"spring","名詞","春","He's no spring chicken.","彼はもう若くない。"],
+[2236,"window","名詞","窓","This window won't fasten.","この窓は締まらない。"],
+[2237,"name","名詞","名前・評判・有名人","My name is Jack.","私の名前はジャックです。"],
+[2238,"implication","名詞","含意","The implication was clear.","その含意は明らかだった。"],
+[2239,"west","名詞","西","He traveled west by train.","彼は列車で西に向かった。"],
+[2240,"wednesday","名詞","水曜日","Derby Day is Wednesday fortnight.","ダービー・デーは2週間後の水曜日。"],
+[2241,"introduction","名詞","紹介","They met through her introduction.","二人は彼女の紹介で出会った。"],
+[2242,"column","名詞","コラム・囲み記事","Tom's column appears weekly.","トムのコラムは毎週掲載されている。"],
+[2243,"exception","名詞","例外","The exception proves the rule.","例外は規則を証明する。"],
+[2244,"nation","名詞","国家","The nation was growing.","その国は成長していた。"],
+[2245,"musician","名詞","音楽家・ミュージシャン","The musician plays the bagpipe.","その音楽家はバグパイプを演奏する。"],
+[2246,"majority","名詞","大多数","The majority was for him.","多数派は彼に賛成だった。"],
+[2247,"january","名詞","1月","Today is January 2nd.","今日は1月2日です。"],
+[2248,"machine","名詞","機械","This machine impressed everyone.","この機械は皆を感動させた。"],
+[2249,"message","名詞","メッセージ・伝言","The message is clear.","メッセージは明確です。"],
+[2250,"hell","名詞","地獄","To hell with conventions!","因習なんかくそくらえだ！"],
+[2251,"impression","名詞","印象","First impressions are important.","第一印象は重要です。"],
+[2252,"hall","名詞","ホール・会場","This hall holds 2000 people.","このホールは2000人収容できます。"],
+[2253,"flower","名詞","花","The flower is opening.","花が開いてきました。"],
+[2254,"transition","名詞","遷移・移行","The transition won't be easy.","移行は簡単ではありません。"],
+[2255,"benefit","名詞","利益・特典","We shared the benefit together.","私たちはその恩恵を分け合った。"],
+[2256,"stock","名詞","在庫・株式","The stock market tumbled.","株式市場は暴落しました。"],
+[2257,"couple","名詞","ペア・カップル","There's a couple here.","ここにカップルがいる。"],
+[2258,"mistake","名詞","間違い","You can't mistake it.","勘違いしてはいけない。"],
+[2259,"road","名詞","道路","Large-scale road construction began.","大規模な道路工事が始まった。"],
+[2260,"pile","名詞","積み重ね","The pile of shit hit again!","糞の山がまた当たった！"],
+[2261,"filter","名詞","フィルター","I don't filter them.","私は彼らをフィルタリングしません。"],
+[2262,"neighborhood","名詞","近所","This neighborhood is violent.","このあたりは暴力的です。"],
+[2263,"foot","名詞","足","I'll foot the bill.","私がすべて払います。"],
+[2264,"pound","名詞","ポンド","Penny wise, pound foolish.","安物買いの銭失い。"],
+[2265,"affair","名詞","事件・事柄・問題","Sami's forbidden affair exploded.","サミの禁断の不倫が暴かれた。"],
+[2266,"choice","名詞","選択","The choice is yours.","選ぶのはあなたです。"],
+[2267,"engineer","名詞","エンジニア・技師","The young engineer lacked experience.","若いエンジニアは経験不足だった。"],
+[2268,"friend","名詞","友だち","Whose friend is he?","彼は誰の友人ですか？"],
+[2269,"cell","名詞","携帯電話・細胞","My cell went off.","私の携帯電話の電源が切れた。"],
+[2270,"chest","名詞","収納箱・胸","Sami's chest was crushed.","サミは胸を押しつぶされた。"],
+[2271,"storm","名詞","嵐","A storm is imminent.","嵐が迫っている。"],
+[2272,"tree","名詞","木","The tree fell down.","木が倒れました。"],
+[2273,"october","名詞","10月","It's October the third.","今日は10月3日です。"],
+[2274,"school","名詞","学校・教習所","When is school over?","学校はいつ終わるの？"],
+[2275,"wound","名詞","傷・負傷させる","The wound won't close.","傷口が塞がらない。"],
+[2276,"expenditure","名詞","支出・費用","The expenditure totaled 200,000 yen.","支出は合計20万円になった。"],
+[2277,"scholar","名詞","学者","This scholar studies ancient manuscripts.","この学者は古文書の研究をしています。"],
+[2278,"golf","名詞","ゴルフ","Where's my golf bag?","私のゴルフバッグはどこ？"],
+[2279,"gallery","名詞","画廊","The art gallery was very crowded.","画廊はとても混んでいた。"],
+[2280,"food","名詞","食物","This food is unhealthy.","この食べ物は不健康です。"],
+[2281,"manager","名詞","経営者・マネージャー","Sami's manager called him.","サミのマネージャーが彼に電話した。"],
+[2282,"commission","名詞","委員会","The commission took no action.","委員会は何もしなかった。"],
+[2283,"rail","名詞","鉄道・レール","I cross the rail tracks every morning.","私は毎朝、線路を渡ります。"],
+[2284,"course","名詞","方向・進路","Of course I'll wait.","もちろん待ちますよ。"],
+[2285,"stuff","名詞","物","Leave my stuff alone.","私のものは放っておいてください。"],
+[2286,"session","名詞","開催・集会・セッション","The parliamentary session was canceled.","国会は中止になりました。"],
+[2287,"uniform","名詞","制服・統一の","Tom keeps his uniform clean.","トムは制服を清潔に保っている。"],
+[2288,"insurance","名詞","保険","This insurance covers everything.","この保険はすべてをカバーしています。"],
+[2289,"variety","名詞","多様性・種類","Give variety to your meals.","食事にバラエティを持たせましょう。"],
+[2290,"subject","名詞","主語・テーマ","This subject is taboo.","このテーマはタブーです。"],
+[2291,"summer","名詞","夏","It's like summer outside.","外は夏のようですね。"],
+[2292,"inch","名詞","インチ","He looks every inch a gentleman.","彼はどこまでも紳士的だ。"],
+[2293,"format","名詞","体裁・形式","The format is different.","フォーマットが違います。"],
+[2294,"buyer","名詞","買い手","Let the buyer beware.","購入者には注意してください。"],
+[2295,"comment","名詞","論評・コメント","Every comment is unnecessary.","すべてのコメントは不要です。"],
+[2296,"attitude","名詞","態度","His attitude disgusts me.","彼の態度にはうんざりだ。"],
+[2297,"regulation","名詞","規制","More regulation is needed.","もっと規制が必要だ。"],
+[2298,"task","名詞","仕事・任務","This task requires dexterity.","この作業には器用さが必要です。"],
+[2299,"peer","名詞","対等者・同級生・貴族","Sami hated peer pressure.","サミは同調圧力を嫌っていた。"],
+[2300,"girl","名詞","女の子","The girl is lonely.","その少女は寂しい。"],
+[2301,"construction","名詞","構造・建造","Large-scale road construction began.","大規模な道路工事が始まった。"],
+[2302,"action","名詞","行動","Prompt action is necessary.","迅速な対応が必要です。"],
+[2303,"extension","名詞","時間延長・延長コード","I need an extension cord.","延長コードが必要です。"],
+[2304,"prize","名詞","賞品","You're no prize yourself.","あなたは魅力的な人物ではありません。"],
+[2305,"incident","名詞","事件","The incident upset him.","この事件は彼を動揺させた。"],
+[2306,"style","名詞","様式","His style was awkward.","彼のスタイルはぎこちなかった。"],
+[2307,"judgment","名詞","判断・判決","I made a judgment call.","私は判断を下した。"],
+[2308,"payment","名詞","支払い","Advance payment is required.","前払いが必要です。"],
+[2309,"weakness","名詞","弱さ","Tom's weakness is potato chips.","トムの弱点はポテトチップスだ。"],
+[2310,"device","名詞","装置・デバイス","This device produces electricity.","この装置は電気を発生させる。"],
+[2311,"cigarette","名詞","タバコ","Put that cigarette out.","そのタバコを消してください。"],
+[2312,"person","名詞","人","Each person paid $7,000.","一人あたり7000ドルを支払った。"],
+[2313,"layer","名詞","層","Today the ozone layer is thinning.","今日、オゾン層は薄くなっています。"],
+[2314,"lover","名詞","恋人・愛好家","My lover doesn't love me.","私の恋人は私を愛していません。"],
+[2315,"pig","名詞","ブタ","The pig is pink.","その豚はピンク色です。"],
+[2316,"sport","名詞","スポーツ","Tom teaches sport psychology.","トムはスポーツ心理学を教えています。"],
+[2317,"flood","名詞","洪水","The flood parted them.","洪水で彼らは離れ離れになった。"],
+[2318,"confidence","名詞","自信","Have confidence in yourself.","自分に自信を持ってください。"],
+[2319,"credit","名詞","クレジット・信用","Your credit card, please.","クレジットカードを見せてください。"],
+[2320,"emotion","名詞","感情","Her emotion was too strong for words.","彼女の感情は言葉にならないほど強かった。"],
+[2321,"paragraph","名詞","段落","This paragraph is vague.","この段落は曖昧だ。"],
+[2322,"pace","名詞","ペース・速度","His pace was slower.","彼のペースは遅かった。"],
+[2323,"investigation","名詞","調査","Further investigation is required.","さらに調査が必要です。"],
+[2324,"bridge","名詞","橋","This bridge looks secure.","この橋は安全そうだ。"],
+[2325,"custom","名詞","習慣","It's all custom made.","全てカスタムメイドです。"],
+[2326,"leg","名詞","脚","I have leg cramps.","脚がつっています。"],
+[2327,"student","名詞","学生","Study the student more.","もっと学生を研究してください。"],
+[2328,"state","名詞","州・状態","Don't state the obvious.","当たり前のことを言わないでください。"],
+[2329,"child","名詞","子ども","Any child knows it.","どんな子供でも知っていることです。"],
+[2330,"dealer","名詞","販売業者","The dealer wants to sell a car.","ディーラーは車を売りたがっている。"],
+[2331,"drama","名詞","劇・ドラマ","He's a drama queen.","彼はドラマの主人公だ。"],
+[2332,"audience","名詞","観客","The audience appeared bored.","観客は退屈そうだった。"],
+[2333,"difference","名詞","相違","The difference is substantial.","その差は相当なものだ。"],
+[2334,"society","名詞","社会","The society made him president.","その学会は彼を会長にした。"],
+[2335,"lecture","名詞","講演","His lecture disappointed us.","彼の講演は我々を失望させた。"],
+[2336,"invitation","名詞","招待","Admission is by invitation only.","入場は招待客のみです。"],
+[2337,"tooth","名詞","歯","This tooth is decayed.","この歯は虫歯になっている。"],
+[2338,"revolution","名詞","革命・回転数","The revolution is over.","革命は終わった。"],
+[2339,"cash","名詞","現金","Please cash this check.","この小切手を現金化してください。"],
+[2340,"income","名詞","収入","Tom had no income then.","トムには当時、収入がありませんでした。"],
+[2341,"personnel","名詞","人事部・人員","It's a personnel matter.","それは人事の問題です。"],
+[2342,"key","名詞","かぎ・重要な","What's this key for?","これは何の鍵ですか。"],
+[2343,"leather","名詞","革・革製品","It's a leather valise.","革製のカバンです。"],
+[2344,"comedy","名詞","コメディー","It's a comedy movie.","コメディ映画です。"],
+[2345,"criticism","名詞","批判","Your criticism is unfair.","あなたの批判は不公平です。"],
+[2346,"account","名詞","口座","Your account is empty.","あなたの口座にはお金が入っていません。"],
+[2347,"carpet","名詞","カーペット","This carpet feels nice.","このカーペットは手触りがいい。"],
+[2348,"height","名詞","高さ","It's the height of luxury.","贅沢の極みですね。"],
+[2349,"speed","名詞","速さ・加速する","This speed is insane.","このスピードは正気の沙汰ではない。"],
+[2350,"symbol","名詞","象徴・記号・シンボル","It's a symbol of friendship.","これは友情の象徴です。"],
+[2351,"sort","名詞","種類","I sort of understand.","なんとなくわかった。"],
+[2352,"motivation","名詞","動機・モチベーション","Sami had no motivation to work.","サミは仕事をする気にならなかった。"],
+[2353,"contest","名詞","競争・争う","This contest is fixed.","このコンテストは八百長です。"],
+[2354,"farmer","名詞","農家の人","The dairy farmer died.","酪農家は死にました。"],
+[2355,"murder","名詞","殺人・殺す","I didn't murder anyone.","私は誰も殺していません。"],
+[2356,"promotion","名詞","促進・販売促進","Tom's promotion came through.","トムの昇進が決まった。"],
+[2357,"wonder","名詞","驚き","I wonder what happened.","何が起こったのか疑問です。"],
+[2358,"innovation","名詞","革新","Sami started a major innovation to the store.","サミは店の大改革を始めました。"],
+[2359,"hope","名詞","希望","We hope for peace.","私たちは平和を願っています。"],
+[2360,"associate","名詞","同僚・仕事仲間","Don't associate with them.","彼らとは付き合わないでください。"],
+[2361,"pension","名詞","年金","He has a pension to live on.","彼には生活するための年金がある。"],
+[2362,"formation","名詞","形成","I modified the formation.","私はフォーメーションを修正しました。"],
+[2363,"visitor","名詞","訪問者","I had no visitor today.","今日は来客がありませんでした。"],
+[2364,"implementation","名詞","履行・実施","We guarantee swift implementation of the plan.","計画の迅速な実行を保証します。"],
+[2365,"family","名詞","家族","My family is small.","私の家族は小さい。"],
+[2366,"battle","名詞","戦い・戦闘","The battle goes on!","戦いは続く！"],
+[2367,"budget","名詞","予算","My budget is tight.","私の予算は厳しいです。"],
+[2368,"coverage","名詞","報道","Newspapers are trying to improve their coverage of international news.","新聞社は国際ニュースの報道を改善しようとしている。"],
+[2369,"stair","名詞","階段","I go down the stairs.","私は階段を降りる。"],
+[2370,"tail","名詞","尾","The mouse's tail is long.","ネズミのしっぽは長いです。"],
+[2371,"middle","名詞","中心・中間・真ん中","What's your middle name?","ミドルネームは何ですか？"],
+[2372,"reader","名詞","読者","The reader is important.","読み手は重要です。"],
+[2373,"volume","名詞","量・容積・体積","Turn the volume up.","ボリュームを上げてください。"],
+[2374,"mode","名詞","状態・方法","I'm in a different mode now.","私は今、別のモードになっています。"],
+[2375,"skirt","名詞","スカート","This skirt hangs nicely.","このスカートはよく似合う。"],
+[2376,"civilian","名詞","民間人","One civilian was killed.","民間人1人が殺害された。"],
+[2377,"hook","名詞","フック","The hook doesn't catch.","フックが引っかからない。"],
+[2378,"border","名詞","境界・国境","The border is closed.","国境は閉鎖されている。"],
+[2379,"ally","名詞","同盟国","Let's ally ourselves to that group.","そのグループに味方しましょう。"],
+[2380,"shop","名詞","店・商店","Many people shop here.","多くの人がここで買い物をします。"],
+[2381,"group","名詞","グループ・集団","He's the group leader.","彼はグループのリーダーだ。"],
+[2382,"charity","名詞","慈善団体","He's active doing charity work.","彼はチャリティー活動に積極的です。"],
+[2383,"chocolate","名詞","チョコレート","Ooh! Chocolate mousse. Yummy.","おお！チョコレートムース。おいしそう。"],
+[2384,"television","名詞","テレビ","The television doesn't work.","テレビが映りません。"],
+[2385,"route","名詞","道・ルート","They came by Route 17.","彼らは国道17号線で来ました。"],
+[2386,"night","名詞","夜","I'm a night owl.","私は夜型人間です。"],
+[2387,"troop","名詞","軍隊","The troop was altogether destroyed.","部隊は全滅した。"],
+[2388,"desert","名詞","砂漠","The desert sun grilled him.","砂漠の太陽が彼を焼き尽くした。"],
+[2389,"gas","名詞","ガス・気体","I have gas indigestion.","私はお腹の調子が悪いです。"],
+[2390,"phrase","名詞","言い回し・語句","This phrase is incomprehensible.","このフレーズは理解できません。"],
+[2391,"application","名詞","申し込み・申請","His application went through.","彼の申請は通りました。"],
+[2392,"telephone","名詞","電話","Here's my telephone number.","これが私の電話番号です。"],
+[2393,"evening","名詞","夕方・晩","It's not evening yet.","まだ夕方ではありません。"],
+[2394,"location","名詞","場所","The location has changed.","場所が変わりました。"],
+[2395,"host","名詞","主人・開催する","Who will host the party?","誰がパーティーを主催しますか？"],
+[2396,"scale","名詞","目盛り・基準・規模","You cannot scale creativity.","創造性をスケールアップすることはできない。"],
+[2397,"tent","名詞","テント","Every tent was filled.","すべてのテントがいっぱいになった。"],
+[2398,"crop","名詞","作物","The rice crop was harvested.","米は収穫された。"],
+[2399,"inflation","名詞","インフレーション・膨張","High unemployment and inflation continued.","高い失業率とインフレが続いた。"],
+[2400,"belief","名詞","信念","His belief is rooted in experience.","彼の信念は経験に根ざしている。"],
+[2401,"prospect","名詞","見込み・可能性","The prospect is still distant.","展望はまだ遠い。"],
+[2402,"memory","名詞","記憶","My memory is failing.","私の記憶力は衰えている。"],
+[2403,"film","名詞","映画・フィルム","This film develops fast.","このフィルムは現像が早い。"],
+[2404,"plant","名詞","植物","This plant looks sick.","この植物は病気のようだ。"],
+[2405,"passage","名詞","通路・通過","No passage this way.","こちらには通路はありません。"],
+[2406,"instruction","名詞","指示・教育","She gives instruction in English.","彼女は英語で指導します。"],
+[2407,"bank","名詞","銀行","Is the bank open?","その銀行は開いていますか。"],
+[2408,"fan","名詞","扇風機・うちわ","The fan doesn't work.","扇風機が動かないのですが。"],
+[2409,"estimate","名詞","見積もり","You can't estimate this state.","この状態を推定することはできません。"],
+[2410,"stage","名詞","舞台","Tom got stage fright.","トムは舞台恐怖症になった。"],
+[2411,"movement","名詞","楽章・動き","Every movement is painful.","すべての動作が苦痛です。"],
+[2412,"facility","名詞","施設","Is the facility clean?","その施設はきれいですか？"],
+[2413,"left","名詞","左","They were left speechless.","彼らは言葉を失った。"],
+[2414,"hole","名詞","穴","The hole is narrow.","その穴は狭い。"],
+[2415,"tendency","名詞","傾向","This tendency is quite useful.","この傾向はかなり有用です。"],
+[2416,"user","名詞","使用者","I don't need the user manual.","私はユーザーマニュアルを必要としません。"],
+[2417,"notion","名詞","概念","This notion is ridiculous.","この考え方は馬鹿げている。"],
+[2418,"gate","名詞","ゲート・門","Which gate is that?","それはどのゲートですか？"],
+[2419,"maker","名詞","作る人・メーカー","The pizza maker tossed the dough.","ピザ職人は生地を投げた。"],
+[2420,"period","名詞","期間・時代","My period is regular.","私の生理は規則的です。"],
+[2421,"aircraft","名詞","航空機","Ships can't rival aircraft for speed.","船は飛行機に匹敵する速さはありません。"],
+[2422,"unit","名詞","単位・部署","The 50 unit phone card.","50単位のテレフォンカード。"],
+[2423,"gesture","名詞","身振り・ジェスチャー","That gesture is offensive.","そのジェスチャーは不愉快だ。"],
+[2424,"capacity","名詞","能力・容量","This elevator's capacity is ten people.","このエレベーターの定員は10人です。"],
+[2425,"form","名詞","形","Bacteria usually form colonies.","細菌は通常コロニーを形成します。"],
+[2426,"secretary","名詞","秘書・大臣・長官","His secretary greeted me.","彼の秘書が私に挨拶した。"],
+[2427,"response","名詞","返答・反応","Tom's response was immediate.","トムはすぐに反応してくれました。"],
+[2428,"tackle","名詞","取り組む","Could you tackle this?","これに取り組んでもらえますか？"],
+[2429,"consultant","名詞","コンサルタント・顧問","The consultant misrepresented his background.","そのコンサルタントは自分の経歴を偽称した。"],
+[2430,"announcement","名詞","お知らせ","Their wedding announcement is exquisite.","彼らの結婚発表は絶妙だ。"],
+[2431,"line","名詞","線・並ぶ","The line is engaged.","回線がつながっています。"],
+[2432,"chamber","名詞","部屋・評議会","Sami looked inside the chamber.","Samiは部屋の中を見た。"],
+[2433,"word","名詞","単語・言葉","The word meant attendants.","その言葉は添乗員という意味だった。"],
+[2434,"storage","名詞","貯蔵・保管","I have storage space.","収納スペースがあります。"],
+[2435,"trigger","名詞","引き金・誘因","Police can't be trigger happy.","警察は銃を撃ちたがってはいけない。"],
+[2436,"hat","名詞","帽子","That hat becomes you.","その帽子はあなたに似合います。"],
+[2437,"meat","名詞","肉","I'd like meat loaf.","ミートローフをください。"],
+[2438,"bath","名詞","浴槽","Is the bath ready?","お風呂は沸いていますか？"],
+[2439,"club","名詞","クラブ・同好会","The club has thirty members.","クラブには30人のメンバーがいます。"],
+[2440,"man","名詞","男","A man overtook her.","男が彼女を追い抜いた。"],
+[2441,"observation","名詞","観察・監視","Every observation is an interpretation.","すべての観察は解釈である。"],
+[2442,"range","名詞","範囲・幅","We discussed a wide range of topics.","私たちは幅広いテーマについて議論しました。"],
+[2443,"examination","名詞","試験","The examination is approaching.","試験が近づいています。"],
+[2444,"crowd","名詞","群衆・群がる","The crowd calmed down.","群衆は静まった。"],
+[2445,"permission","名詞","許可","Sami asked permission of Layla.","サミはレイラに許可を求めた。"],
+[2446,"shower","名詞","シャワー","This shower is broken.","このシャワーは壊れています。"],
+[2447,"importance","名詞","重要性","What importance did Nationalism have?","ナショナリズムはどんな重要性を持っていましたか？"],
+[2448,"friday","名詞","金曜日","Tom took Friday off.","トムは金曜日に休みを取った。"],
+[2449,"president","名詞","大統領・社長","The president abolished slavery.","大統領は奴隷制度を廃止した。"],
+[2450,"atmosphere","名詞","大気・空気・雰囲気","The atmosphere was uncomfortable.","その雰囲気は居心地が悪かった。"],
+[2451,"grass","名詞","草","The grass needs cutting.","その草は刈る必要がある。"],
+[2452,"phase","名詞","段階","I think that whole phase is over.","私はその全ての局面が終わったと思います。"],
+[2453,"attribute","名詞","属性・特質","Cruelty, it's the first attribute of God.","残酷さ、それは神の最初の属性だ。"],
+[2454,"empire","名詞","帝国","The empire strikes back.","帝国は反撃する。"],
+[2455,"executive","名詞","幹部","This was an executive decision.","これは幹部の決定である。"],
+[2456,"technique","名詞","技術","Tom's technique is impressive.","トムのテクニックは素晴らしい。"],
+[2457,"chart","名詞","図表","The chart illustrates how the body works.","このチャートは、体がどのように動くかを示しています。"],
+[2458,"difficulty","名詞","難しさ・困難","I have difficulty breathing.","私は息苦しいです。"],
+[2459,"mile","名詞","マイル","It's one mile from here.","ここから1マイルです。"],
+[2460,"movie","名詞","映画","Was the movie good?","映画は良かったですか？"],
+[2461,"ocean","名詞","海・大洋","The ocean was calm.","海は穏やかだった。"],
+[2462,"december","名詞","12月","Christmas is December 25th.","クリスマスは12月25日です。"],
+[2463,"grammar","名詞","文法","Her grammar is bad.","彼女の文法は悪い。"],
+[2464,"silence","名詞","静けさ","Her silence surprised me.","彼女の沈黙に私は驚いた。"],
+[2465,"culture","名詞","文化・教養","Our culture is threatened.","我々の文化は脅かされている。"],
+[2466,"beer","名詞","ビール","Drinking beer refreshes me.","ビールを飲むと気分転換になる。"],
+[2467,"thursday","名詞","木曜日","Next Thursday is a holiday.","来週の木曜日は祝日です。"],
+[2468,"passion","名詞","情熱","This tastes like passion fruit.","これはパッションフルーツの味がします。"],
+[2469,"monitor","名詞","モニター","That monitor is expensive.","そのモニターは高いですね。"],
+[2470,"map","名詞","地図","This map is worthless.","この地図は価値がない。"],
+[2471,"phenomenon","名詞","現象","The same phenomenon has been observed.","同じ現象が観察されています。"],
+[2472,"plan","名詞","計画・段取り","Your plan sounds great.","あなたの計画は素晴らしいですね。"],
+[2473,"revenue","名詞","収入・収益","His revenue doubled after retirement.","彼の収入は退職後に2倍になった。"],
+[2474,"module","名詞","モジュール","The crew can enter the underwater vehicle using a plug-in module.","クルーはプラグインモジュールを使って水中ビークルに入ることができる。"],
+[2475,"imagination","名詞","想像力","Tom's imagination was aroused.","トムの想像力がかきたてられた。"],
+[2476,"individual","名詞","個人・個人の","Each individual is different.","一人一人が違う。"],
+[2477,"opponent","名詞","対戦相手・反対者","Tom's opponent was Mary.","トムの対戦相手はメアリーだった。"],
+[2478,"horse","名詞","馬","The horse came first.","馬が先に来た。"],
+[2479,"fault","名詞","欠点","Whose fault is it?","それは誰のせいですか？"],
+[2480,"indication","名詞","表示・兆候","Ignorance is not an indication of stupidity.","無知は愚かさを示すものではありません。"],
+[2481,"holder","名詞","所有者","I'm a holder of ABC Travel Insurance.","私はABC旅行保険の保有者です。"],
+[2482,"enterprise","名詞","企業・事業・企て","The enterprise was doomed to failure.","その事業は失敗する運命にあった。"],
+[2483,"total","名詞","合計","That's a total lie.","それは全くの嘘だ。"],
+[2484,"cast","名詞","配役","I'm completely cast down!","私は完全に打ちのめされてしまった！"],
+[2485,"date","名詞","日付","What's the date today?","今日は何の日だ？"],
+[2486,"test","名詞","試験・テスト","John finished his test.","ジョンはテストを終えました。"],
+[2487,"infection","名詞","感染症","The infection is spreading.","感染が広がっています。"],
+[2488,"month","名詞","月","What month is this?","これは何月？"],
+[2489,"fight","名詞","けんか・戦い","The fight is over.","戦いは終わった。"],
+[2490,"output","名詞","生産・出力","Global agricultural output was expanding.","世界の農業生産高は拡大していた。"],
+[2491,"effort","名詞","努力","Your effort deserves praise.","あなたの努力は称賛に値します。"],
+[2492,"competition","名詞","競争","The competition is fierce.","競争は激しいですね。"],
+[2493,"chair","名詞","椅子","This chair is ugly.","この椅子は醜い。"],
+[2494,"part","名詞","一部・部分","That's part of it.","それもそのはず。"],
+[2495,"sector","名詞","部門","Tom is not authorized for this sector.","トムはこの分野の権限を持っていない。"],
+[2496,"thirst","名詞","渇き","My thirst is quenched.","のどの渇きがおさまった。"],
+[2497,"bird","名詞","鳥","This bird cannot fly.","この鳥は飛べません。"],
+[2498,"substance","名詞","実体・実質・内容","This substance will mix with water.","この物質は水と混ざります。"],
+[2499,"education","名詞","教育","Your education is important.","あなたの教育は重要です。"],
+[2500,"pro","名詞","専門職・プロ","I like pro-wrestling.","私はプロレスが好きです。"],
+[2501,"product","名詞","製品","This product is well-designed.","この製品はよくデザインされています。"],
+[2502,"essay","名詞","小論文・エッセイ","His essay is rubbish.","彼のエッセーはくだらない。"],
+[2503,"february","名詞","2月","March comes between February and April.","3月は2月と4月の間にある。"],
+[2504,"classic","名詞","一流作品・古典","Tom likes classic cars.","トムはクラシックカーが好きだ。"],
+[2505,"parent","名詞","親","Which parent does the child resemble?","子供はどちらの親に似ていますか？"],
+[2506,"therapy","名詞","治療","Maybe therapy would help.","セラピーが役に立つかもしれません。"],
+[2507,"trend","名詞","傾向・流行","That trend should continue.","この傾向は今後も続くだろう。"],
+[2508,"privilege","名詞","特権・特典","Every privilege carries responsibility with it.","すべての特権には責任が伴います。"],
+[2509,"cow","名詞","牛","The cow eats grass.","牛は草を食べます。"],
+[2510,"source","名詞","源","Where's the source code?","ソースコードはどこにある？"],
+[2511,"database","名詞","データベース","The database is full.","データベースは満杯です。"],
+[2512,"exercise","名詞","運動する","I exercise my rights.","私は自分の権利を行使する。"],
+[2513,"last","名詞","最後の","At last he appeared.","ついに彼は現れた。"],
+[2514,"estate","名詞","土地・財産・地位","She is an estate agent.","彼女は不動産業者です。"],
+[2515,"assistant","名詞","助手","The assistant kept $2.","助手は2ドルを維持した。"],
+[2516,"perspective","名詞","視点・遠近法","Tom's perspective has changed.","トムの視点が変わった。"],
+[2517,"resistance","名詞","抵抗・耐性","The resistance movement has gone underground.","抵抗運動は地下に潜ってしまった。"],
+[2518,"pair","名詞","一組・ペア","What a pair of morons!","何というバカな二人なんだ。"],
+[2519,"castle","名詞","城","That castle is beautiful.","あの城は美しい。"],
+[2520,"symptom","名詞","症状・兆候","Do you have this symptom often?","あなたはこの症状がよくありますか？"],
+[2521,"sentence","名詞","文","This sentence is false.","この文は間違っている。"],
+[2522,"ad","名詞","広告","The ad really pulled.","その広告は本当に効果があった。"],
+[2523,"game","名詞","ゲーム","The game was suspended.","試合は中止になった。"],
+[2524,"bill","名詞","請求書","How fast Bill runs!","ビルはなんて速く走るのだろう。"],
+[2525,"floor","名詞","床","The floor gave way.","床が壊れた。"],
+[2526,"furniture","名詞","家具","The furniture was dusty.","家具はほこりだらけだった。"],
+[2527,"concentration","名詞","集中・濃度","All it takes is concentration and solitude.","必要なのは集中力と孤独だ。"],
+[2528,"perception","名詞","知覚・認知","This perception is incorrect.","この認識は間違っている。"],
+[2529,"steel","名詞","鋼","This steel is stainless.","この鉄はステンレスです。"],
+[2530,"employee","名詞","従業員","The outraged employee resigned at once.","憤慨した社員はすぐに辞職した。"],
+[2531,"technology","名詞","科学技術","Why does technology hate me?","なぜテクノロジーは私を嫌うのでしょう？"],
+[2532,"piece","名詞","一かけら・破片","This piece doesn't match.","この作品は合わない。"],
+[2533,"factor","名詞","要因","What factor contributed to the reaction?","この反応の要因は？"],
+[2534,"poem","名詞","詩","Who's that poem by?","あの詩は誰の作ですか。"],
+[2535,"narrative","名詞","物語","Suspense is the very stuff of narrative.","サスペンスは、物語の本質です。"],
+[2536,"league","名詞","同盟・リーグ","She's an Ivy League graduate.","彼女はアイビーリーグの卒業生です。"],
+[2537,"snow","名詞","雪・雪が降る","Quit the snow job!","雪の仕事をやめて！"],
+[2538,"sun","名詞","太陽","The sun came out.","太陽が出てきた。"],
+[2539,"envelope","名詞","封筒","I ripped the envelope open.","私は封筒を破って開けた。"],
+[2540,"evolution","名詞","進化","The evolution of dinosaurs interests me greatly.","恐竜の進化にはとても興味があります。"],
+[2541,"sanction","名詞","認可・制裁","Tom will never sanction this.","トムはこれを絶対に制裁しないだろう。"],
+[2542,"bottle","名詞","ボトル・瓶","The bottle is full.","ボトルはいっぱいです。"],
+[2543,"harbor","名詞","港","The harbor can be blocked.","港は封鎖できる。"],
+[2544,"guy","名詞","男・やつ","That guy annoys me.","あいつには頭にくるよ。"],
+[2545,"performance","名詞","演奏・公演","The performance was low-keyed.","パフォーマンスは控えめだった。"],
+[2546,"passenger","名詞","乗客","Two passenger ships were sunk.","2隻の旅客船が沈没した。"],
+[2547,"tradition","名詞","伝統","That tradition continues today.","その伝統は今も続いている。"],
+[2548,"nurse","名詞","看護師","A nurse wears white.","看護師は白い服を着ています。"],
+[2549,"coat","名詞","上着・コート","This coat is rainproof.","このコートは雨に強い。"],
+[2550,"presence","名詞","出席・存在","Mary's very presence inspired Tom.","メアリーの存在そのものがトムを奮い立たせた。"],
+[2551,"universe","名詞","宇宙","The universe is endless.","宇宙は果てしない。"],
+[2552,"concept","名詞","概念","The concept is amazing.","そのコンセプトは素晴らしい。"],
+[2553,"train","名詞","電車","The train was derailed.","その列車は脱線した。"],
+[2554,"ball","名詞","ボール・球","The ball slightly curved.","ボールが少し曲がった。"],
+[2555,"survival","名詞","生き残り","Tom's survival was considered miraculous.","トムの生存は奇跡的と言われている。"],
+[2556,"hand","名詞","手","Keep your hand still.","手を動かさないでください。"],
+[2557,"amendment","名詞","改正","The amendment was first proposed in 1789.","修正案は1789年に初めて提案された。"],
+[2558,"concert","名詞","コンサート","That concert wasn't rocking.","そのコンサートはロックではなかった。"],
+[2559,"page","名詞","ページ","Please read page ninety-four.","94ページをお読みください。"],
+[2560,"career","名詞","経歴・職業","His career had faltered.","彼のキャリアは低迷していた。"],
+[2561,"retirement","名詞","引退・退職","Now that's a retirement plan.","それが引退後の計画だ。"],
+[2562,"sea","名詞","海","The sea is down.","海が沈んでいる。"],
+[2563,"frequency","名詞","頻度","What's the frequency of the processor?","プロセッサーの周波数はどれくらいですか？"],
+[2564,"joy","名詞","喜び","Sharing joy multiplies it.","喜びを分かち合うことは、それを倍増させる。"],
+[2565,"hour","名詞","時間","Half an hour passed.","三十分経ちました。"],
+[2566,"birth","名詞","誕生","I use birth control.","私は避妊具を使っています。"],
+[2567,"college","名詞","大学","I'm a college student.","私は大学生です。"],
+[2568,"identity","名詞","アイデンティティ・身元","Sami committed identity theft.","サミはID窃盗を犯した。"],
+[2569,"population","名詞","人口","The population is increasing.","人口は増えています。"],
+[2570,"owner","名詞","持ち主・オーナー","The owner couldn't be located.","持ち主は見つからなかった。"],
+[2571,"colleague","名詞","同僚","My colleague doctored the report.","同僚が報告書を改ざんした。"],
+[2572,"author","名詞","著者","The author is Brazilian.","作者はブラジル人です。"],
+[2573,"mess","名詞","混乱・散らかす","Don't mess me around!","私を混乱させないでください！"],
+[2574,"tour","名詞","旅行・ツアー","Is the tour going well?","ツアーはうまくいっていますか？"],
+[2575,"square","名詞","正方形・四角","Time Square is empty.","タイムスクエアには誰もいない。"],
+[2576,"division","名詞","分割・部門","There isn't a division in paragraphs.","段落の区切りがありません。"],
+[2577,"actor","名詞","俳優","The actor missed a line.","その俳優はセリフを言い間違えた。"],
+[2578,"step","名詞","階段・ステップ","Let me step inside.","中に入らせてください。"],
+[2579,"studio","名詞","スタジオ","I want a studio cat.","私はスタジオの猫が欲しい。"],
+[2580,"scientist","名詞","科学者","The scientist found out laws.","その科学者は法則を見つけた。"],
+[2581,"outcome","名詞","結果","The outcome is uncertain.","結果は不確かです。"],
+[2582,"journey","名詞","旅","Your journey starts here.","あなたの旅はここから始まります。"],
+[2583,"rain","名詞","雨","It may rain soon.","もうすぐ雨が降るかもしれません。"],
+[2584,"sister","名詞","姉妹","My sister likes sweets.","私の妹は甘いものが好きです。"],
+[2585,"finance","名詞","財政・金融・資金","The new finance minister has street-cred.","新しい財務大臣は信用がある。"],
+[2586,"cancer","名詞","癌","I'm a cancer patient.","私は癌の患者です。"],
+[2587,"logic","名詞","論理","Their logic is stupid.","彼らの論理は馬鹿げている。"],
+[2588,"episode","名詞","エピソード・出来事","I've just finished watching episode three.","今、第3話を見終わったところです。"],
+[2589,"minority","名詞","少数派","The chairperson should consider the minority opinion.","議長は、少数意見を考慮すべきである。"],
+[2590,"pen","名詞","ペン","Whose pen is this?","このペンは誰のものですか？"],
+[2591,"gentleman","名詞","紳士","The gentleman bought it.","その紳士はそれを買った。"],
+[2592,"company","名詞","会社","Our company pays badly.","うちの会社は給料が悪い。"],
+[2593,"government","名詞","政府","I'm a government worker.","私は政府の職員です。"],
+[2594,"efficiency","名詞","効率","The energy conversion efficiency is high.","エネルギー変換効率が高いです。"],
+[2595,"class","名詞","階級・ランク・授業","I have class tomorrow.","私は明日授業があります。"],
+[2596,"musical","名詞","ミュージカル","The girl lacked musical ability.","その女の子には音楽の才能がなかった。"],
+[2597,"ability","名詞","能力","Such ability is native to him.","そのような能力は彼に備わっている。"],
+[2598,"sale","名詞","販売・売上高","These are on sale everywhere.","これはどこでも売っています。"],
+[2599,"peak","名詞","頂点","It's in peak condition.","最高の状態です。"],
+[2600,"menu","名詞","メニュー","Our menu changes monthly.","メニューは毎月変わります。"],
+[2601,"meal","名詞","食事","The meal was disgusting.","食事が不味かった。"],
+[2602,"race","名詞","競争・競争する","The race was fixed.","レースは八百長だった。"],
+[2603,"short","名詞","短い・背が低い・不足して","Take a short cut.","近道をしてください。"],
+[2604,"record","名詞","レコード・記録","This record still stands.","この記録はまだ残っている。"],
+[2605,"curve","名詞","曲線・曲がり","I hit a curve ball.","カーブを打ちました。"],
+[2606,"disaster","名詞","災害","Newspapers peddle disaster scenarios.","新聞は災害シナリオを売り物にする。"],
+[2607,"complaint","名詞","苦情","The complaint was dismissed.","訴状は棄却された。"],
+[2608,"dust","名詞","ほこり","Let the dust settle.","塵も積もれば山となる。"],
+[2609,"chemical","名詞","化学の・化学製品","Magnesium is a chemical element.","マグネシウムは化学元素の一種です。"],
+[2610,"fiction","名詞","架空・フィクション","I like science fiction better.","SFのほうが好きです。"],
+[2611,"opposition","名詞","反対","Their opposition broke down.","彼らの反対勢力は崩壊した。"],
+[2612,"panel","名詞","パネル・委員会","A panel of experts discussed the plan.","専門家のパネルがこの計画を議論した。"],
+[2613,"shock","名詞","ショック・激突","The shock was terrible.","そのショックは大きかった。"],
+[2614,"ship","名詞","船","The ship set sail.","船は出航した。"],
+[2615,"salt","名詞","塩","The salt ran out.","塩がなくなった。"],
+[2616,"cream","名詞","クリーム","There's ice cream in the freezer.","冷凍庫にはアイスクリームがある。"],
+[2617,"brush","名詞","ブラシ・ハケ","Just brush your hair.","髪をとかしなさい。"],
+[2618,"gun","名詞","銃","Is your gun loaded?","銃に弾は入っていますか？"],
+[2619,"home","名詞","家庭・自宅","What's your home address?","住所はどこですか？"],
+[2620,"mechanism","名詞","機構・メカニズム","The locking mechanism has jammed.","ロック装置が作動しない。"],
+[2621,"disk","名詞","ディスク","This car has disk brakes.","この車にはディスクブレーキがついている。"],
+[2622,"oil","名詞","油","Coconut oil does wonders!","ココナッツオイルの効果は絶大です。"],
+[2623,"interaction","名詞","相互作用・交流","Then interaction with others becomes important.","そして、人との交流が重要になってきます。"],
+[2624,"noun","名詞","名詞","A noun can be singular or plural.","名詞には単数形と複数形があります。"],
+[2625,"property","名詞","所有物・財産","The property is mine.","その財産は私のものです。"],
+[2626,"bell","名詞","ベル","What did Bell invent?","ベルは何を発明したのですか？"],
+[2627,"density","名詞","密度","Japan has a high population density.","日本は人口密度が高い。"],
+[2628,"material","名詞","材料・物質","This material stretches easily.","この素材は簡単に伸びます。"],
+[2629,"reaction","名詞","反応","The tuberculin reaction was positive.","ツベルクリン反応は陽性でした。"],
+[2630,"slope","名詞","傾斜","The slippery slope is unavoidable.","滑りやすいのはやむを得ない。"],
+[2631,"success","名詞","成功","Tom's success motivated us.","トムの成功は我々のモチベーションを高めた。"],
+[2632,"mayor","名詞","市長","The mayor granted our request.","市長は私たちの要求を認めてくれました。"],
+[2633,"letter","名詞","手紙","Your letter crossed mine.","あなたの手紙が私の手紙を横切った。"],
+[2634,"apartment","名詞","アパート","Your apartment looks wonderful!","あなたのアパートは素晴らしいですね。"],
+[2635,"access","名詞","アクセス・接近","Bicycle access is limited.","自転車でのアクセスは制限されています。"],
+[2636,"partner","名詞","パートナー・相棒","Tom's skating partner is Mary.","トムのスケートのパートナーはメアリーです。"],
+[2637,"bunch","名詞","束","It's a bunch of nonsense.","くだらないことを言っている。"],
+[2638,"cake","名詞","ケーキ","Your cake is delicious.","あなたのケーキはおいしいですね。"],
+[2639,"shareholder","名詞","株主","The shareholder's meeting was held.","株主総会が開かれました。"],
+[2640,"mirror","名詞","鏡","A mirror reflects light.","鏡は光を反射します。"],
+[2641,"communication","名詞","コミュニケーション・通信","All communication is translation.","すべてのコミュニケーションは翻訳です。"],
+[2642,"dog","名詞","犬","Which dog is yours?","あなたはどの犬ですか？"],
+[2643,"theme","名詞","主題・テーマ","That's their theme song.","それは彼らのテーマソングです。"],
+[2644,"hotel","名詞","ホテル","There's a hotel here.","ここにはホテルがあります。"],
+[2645,"earth","名詞","地球","The earth is round.","地球は丸い。"],
+[2646,"distance","名詞","距離","Can long distance relationships work?","遠距離恋愛はうまくいきますか？"],
+[2647,"generation","名詞","世代","Your generation didn't understand sexuality.","あなたたちの世代はセクシュアリティを理解していませんでした。"],
+[2648,"church","名詞","教会","The Church is unnecessary.","教会は不要です。"],
+[2649,"scope","名詞","範囲・詳しく調べる","Their scope and shape is unclear.","彼らの範囲や形は不明確だ。"],
+[2650,"climate","名詞","気候","The climate is changing.","気候が変化している。"],
+[2651,"water","名詞","水","Much water is needed.","多くの水が必要です。"],
+[2652,"vision","名詞","視覚・視力","Fadil's vision soon returned.","ファディルの視力はすぐに戻った。"],
+[2653,"recommendation","名詞","推薦","My teacher wrote a recommendation for me.","私の先生は私のために推薦状を書いてくれました。"],
+[2654,"box","名詞","箱・ボックス","Take that box away!","その箱を持って行け！"],
+[2655,"money","名詞","お金・金銭・財産","Ready money will away.","用意のできた金は無くなる。"],
+[2656,"log","名詞","丸太","Where's the log house?","ログハウスはどこ？"],
+[2657,"cable","名詞","電線","Tom doesn't have cable TV.","トムはケーブルテレビを持っていない。"],
+[2658,"decade","名詞","10年","They spent nearly a decade together.","彼らは10年近く一緒に過ごした。"],
+[2659,"proposal","名詞","提案","The proposal went through.","プロポーズは成功しました。"],
+[2660,"charm","名詞","魅力・魅了","Tom is charm personified.","トムは魅力的な人です。"],
+[2661,"pride","名詞","誇り","That's your pride talking.","それはあなたのプライドの問題です。"],
+[2662,"art","名詞","芸術","True art is theft.","真の芸術は窃盗だ。"],
+[2663,"context","名詞","文脈・状況","The context is important.","文脈が大事だ。"],
+[2664,"pleasure","名詞","楽しさ・愉快・満足","The pleasure is mine.","こちらこそ。"],
+[2665,"power","名詞","権力・支配権","The power went out.","停電になった。"],
+[2666,"curtain","名詞","カーテン","The curtain wants cleaning.","カーテンはクリーニングが必要だ。"],
+[2667,"number","名詞","数字・番号","Your number doesn't answer.","お掛けの番号は応答がありません。"],
+[2668,"grain","名詞","粒・穀物","Farmers sow grain seeds in spring.","農家は春に穀物の種を蒔きます。"],
+[2669,"grade","名詞","学年","What grade are you in?","あなたは何年生ですか？"],
+[2670,"luxury","名詞","豪華さ・贅沢品","It is a luxury cruise.","贅沢なクルーズです。"],
+[2671,"mountain","名詞","山","The mountain is green.","その山は緑です。"],
+[2672,"heart","名詞","心臓","My heart stopped beating.","私の心臓が止まりました。"],
+[2673,"customer","名詞","顧客","Sami called customer service.","サミはカスタマーサービスに電話した。"],
+[2674,"time","名詞","時間という概念","Your time is up.","時間切れです。"],
+[2675,"preparation","名詞","準備","The preparation starts tomorrow.","準備は明日からです。"],
+[2676,"twin","名詞","双子","They have twin daughters.","彼らには双子の娘がいます。"],
+[2677,"surgery","名詞","手術","Will surgery help it?","手術で治りますか？"],
+[2678,"gift","名詞","贈り物・才能","Is this gift Laura's?","これはローラの贈り物？"],
+[2679,"taste","名詞","味","These apples taste good.","このリンゴはおいしい。"],
+[2680,"husband","名詞","夫","I'll call my husband.","夫に電話してみよう。"],
+[2681,"bias","名詞","偏見・バイアス","She wrote on gender bias in science.","彼女は科学における性差別について書いた。"],
+[2682,"emphasis","名詞","強調","Our English teacher put emphasis on pronunciation.","私たちの英語の先生は発音に重点を置いています。"],
+[2683,"news","名詞","知らせ・ニュース","Bad news travels fast.","悪いニュースはすぐに伝わるものです。"],
+[2684,"virus","名詞","ウイルス","A virus infected Tom's computer.","トムのコンピューターはウイルスに感染した。"],
+[2685,"mathematics","名詞","数学","Pure mathematics is religion.","純粋数学は宗教である。"],
+[2686,"crisis","名詞","危機","Can the crisis be overcome?","この危機を乗り越えられるのか？"],
+[2687,"basis","名詞","基準・基礎","That's my basis for saying so.","それが私がそう言う根拠です。"],
+[2688,"clothes","名詞","衣服","His clothes were dripping.","彼の服からポタポタ垂れていた。"],
+[2689,"species","名詞","種","The species faded away.","その種は姿を消した。"],
+[2690,"series","名詞","連続","What's your favorite TV series?","好きなテレビシリーズは？"],
+[2691,"hypothesis","名詞","仮説","Your hypothesis is correct.","あなたの仮説は正しい。"],
+[2692,"politics","名詞","政治","I find politics very interesting.","私は政治がとても面白いと思う。"],
+[2693,"data","名詞","データ","This data is incorrect.","このデータは間違っています。"],
+[2694,"she","代名詞","彼女","Because she felt sick.","気分が悪くなったからです。"],
+[2695,"much","代名詞","たくさんの・非常に","How much is it?","それはいくらですか？"],
+[2696,"his","代名詞","彼の・彼のもの","Worry affected his health.","心配が彼の健康に影響を与えた。"],
+[2697,"itself","代名詞","それ自体","It'll cure itself naturally.","自然に治りますよ。"],
+[2698,"her","代名詞","彼女の・彼女を","I work with her boyfriend.","彼女の彼氏と一緒に働いています。"],
+[2699,"herself","代名詞","彼女自身","She knows herself well.","彼女は自分のことをよく知っている。"],
+[2700,"he","代名詞","彼","Trust me, he said.","私を信じなさい、と。"],
+[2701,"plenty","代名詞","たくさん","I've got plenty more.","もっとたくさん持っています。"],
+[2702,"nothing","代名詞","何もない","Please leave nothing behind.","何も残さないでください。"],
+[2703,"something","代名詞","何か","I want something sweet.","何か甘いものが欲しい。"],
+[2704,"anyone","代名詞","誰か・誰も・誰でも","Is anyone else bidding?","他に入札している人はいますか？"],
+[2705,"myself","代名詞","私自身","I cut myself shaving.","ひげをそっていてけがをした。"],
+[2706,"yourself","代名詞","あなた自身","Make yourself at home.","自宅でくつろいでください。"],
+[2707,"themselves","代名詞","彼ら自身・それら自体","Everybody tells themselves that.","誰もが自分にそう言っている。"],
+[2708,"him","代名詞","彼を","Care aged him quickly.","介護は彼をすぐに老けさせた。"],
+[2709,"himself","代名詞","彼自身","He wished himself dead.","彼は自分の死を願った。"],
+[2710,"everything","代名詞","すべてのこと","Sometimes everything goes wrong.","時々すべてがうまくいかなくなる。"],
+[2711,"mine","代名詞","私のもの","What's mine is yours.","私のものはあなたのものです。"],
+[2712,"they","代名詞","彼ら・彼女ら・それら","What are they for?","それらは何のためですか。"],
+[2713,"anybody","代名詞","誰か・誰も・誰でも","Was anybody else absent?","ほかに誰か欠席しましたか。"],
+[2714,"them","代名詞","彼らを・それらを","I'm seeing them tonight.","今夜彼らに会います。"],
+[2715,"me","代名詞","私を","You make me dream.","あなたは私に夢を与えてくれます。"],
+[2716,"everyone","代名詞","みんな・誰でも","She charmed everyone present.","彼女はその場にいた全員を魅了した。"],
+[2717,"someone","代名詞","誰か","I heard someone scream.","誰かが悲鳴を上げるのが聞こえた。"],
+[2718,"most","代名詞","最も多くの・たいていの","Coffee finishes most dinners.","夕食の最後にはコーヒーを飲みます。"],
+[2719,"who","代名詞","誰","Know who you are.","あなたが誰であるかを知ってください。"],
+[2720,"it","代名詞","それ","What does it involve?","それは何を意味するのか？"],
+[2721,"whom","代名詞","誰を・誰に","To whom are you referring?","誰のことを言っているのですか？"],
+[2722,"nobody","代名詞","誰もいない","There was nobody there.","誰もいませんでした。"],
+[2723,"we","代名詞","私たち","When do we arrive?","私たちはいつ到着しますか？"],
+[2724,"somebody","代名詞","誰か","Can somebody get that?","だれかそれを取ってくれませんか。"],
+[2725,"none","代名詞","何もない・誰もいない","There is none left.","もうありません。"],
+[2726,"us","代名詞","私たちを","Milk makes us strong.","ミルクは私たちを強くします。"],
+[2727,"ourselves","代名詞","私たち自身","We clean ourselves there.","私たちはそこで体を洗います。"],
+[2728,"everybody","代名詞","みんな・誰でも","Does everybody love music?","みんな音楽が好きですか？"],
+[2729,"whose","代名詞","誰の","This umbrella, whose is it?","この傘、誰のだろう？"],
+[2730,"you","代名詞","あなた","Why do you ask?","なぜ聞くのですか？"],
+[2731,"about","前置詞","〜について","I dreamt about you.","あなたの夢を見ました。"],
+[2732,"since","前置詞","〜以来・〜なので","What's changed since then?","あれから何が変わったの？"],
+[2733,"beneath","前置詞","〜の下に","That is beneath ordinary decency.","それは普通の良識の範囲を超えています。"],
+[2734,"plus","前置詞","正数・プラス","Two plus two makes four.","2足す2は4。"],
+[2735,"beside","前置詞","〜の近くに・〜の隣に","What's beside the desk?","机のそばに何がありますか。"],
+[2736,"upon","前置詞","〜の上に","Science rests upon observation.","科学は観察に基づいている。"],
+[2737,"except","前置詞","〜を除いて・〜以外","Everyone except Tom left.","トム以外はみんな帰ってしまった。"],
+[2738,"down","前置詞","下へ・下って","Bite down tightly, please.","しっかりと噛んでくださいね。"],
+[2739,"per","前置詞","〜につき・〜ごとに","What's the productivity per person?","一人当たりの生産性は？"],
+[2740,"alongside","前置詞","〜と並んで・〜のそばに","I worked alongside Tom.","私はトムと一緒に働いていました。"],
+[2741,"at","前置詞","〜の所で・〜に","Make yourself at home.","自分の家のようにくつろいでください。"],
+[2742,"among","前置詞","〜の間に・〜の中の","We agreed among ourselves.","私たちは意見が一致した。"],
+[2743,"besides","前置詞","〜のほか・その上","Ram's table is besides mine.","ラムのテーブルは私のテーブルの横にあります。"],
+[2744,"from","前置詞","〜から・〜出身の","Are you from Kyoto?","あなたは京都出身ですか？"],
+[2745,"for","前置詞","〜のために・〜に向かって","Thanks for your explanation.","あなたの説明に感謝します。"],
+[2746,"against","前置詞","〜に反対して","We are against war.","私たちは戦争に反対です。"],
+[2747,"via","前置詞","〜を経由して・〜によって","He came via San Francisco.","彼はサンフランシスコ経由で来ました。"],
+[2748,"by","前置詞","〜の近くに・〜によって","We left by train.","私達は列車で出発しました。"],
+[2749,"throughout","前置詞","至る所に・〜の間中ずっと","His action throughout was correct.","彼の行動はずっと正しかった。"],
+[2750,"into","前置詞","〜の中へ","I burst into tears.","私は涙を流しました。"],
+[2751,"versus","前置詞","〜に対して","The exchange rate of the dollar versus the euro has declined.","ドルとユーロの為替レートは下がりました。"],
+[2752,"as","前置詞","同じぐらい・〜のように","Do as you want.","好きなようにしてください。"],
+[2753,"double","前置詞","二倍・二倍の","It's a double whammy.","二重の痛みですね。"],
+[2754,"along","前置詞","〜に沿って","Sail along the coast.","海岸沿いに帆を張って。"],
+[2755,"of","前置詞","〜の・〜から・〜について","I'm proud of you.","あなたを誇りに思います。"],
+[2756,"without","前置詞","〜なしで","No gains without pains.","苦労なくして得るものなし。"],
+[2757,"between","前置詞","〜の間に","Don't eat between meals.","食事の間に食べてはいけない。"],
+[2758,"during","前置詞","〜の間に","Jack took notes during class.","ジャックは授業中にノートを取っていました。"],
+[2759,"with","前置詞","〜と一緒に・〜で","I'm dripping with sweat.","汗でびっしょりです。"],
+[2760,"over","前置詞","〜の上に","What is over there?","あそこには何があるの？"],
+[2761,"despite","前置詞","〜にもかかわらず","He succeeded despite several obstacles.","いくつかの障害を乗り越えて成功した。"],
+[2762,"onto","前置詞","〜の上に・〜に向けられて","Hold onto your husband.","あなたの夫にしっかりつかまって。"],
+[2763,"yes","間投詞","はい","Why yes it is.","どうしてそうなんですか。"],
+[2764,"okay","間投詞","よし・わかった","It's okay to go.","行ってもいいよ。"],
+[2765,"hello","間投詞","こんにちは","Say hello to Jimmy.","ジミーによろしくね。"],
+[2766,"hi","間投詞","やあ・こんにちは","Tell Tom hi for me.","トムによろしくね。"],
+[2767,"sorry","間投詞","すまない・後悔している","I'm sorry for you.","お気の毒に。"],
+[2768,"other","限定詞","もう一方の・別の・他の","Take the other chair!","他の椅子に座って！"],
+[2769,"own","限定詞","自身の・特有の","Mind your own business!","余計なお世話だ！"],
+[2770,"our","限定詞","私たちの","Smoking affects our health.","喫煙は私たちの健康に影響します。"],
+[2771,"same","限定詞","同じ","The same to you.","あなたもそうですよね。"],
+[2772,"any","限定詞","何か・どれも・どれでも","There isn't any solution.","何の解決策もありません。"],
+[2773,"many","限定詞","多くの・多数","You have many books.","あなたはたくさんの本を持っていますね。"],
+[2774,"whatever","限定詞","何であれ・一体何が","Eat whatever you like.","何でも好きなものを食べなさい。"],
+[2775,"such","限定詞","そのような・とても〜な","Give up such ideas.","そんな考えは捨てなさい。"],
+[2776,"your","限定詞","あなたの","Thanks for your explanation.","説明してくれてありがとう。"],
+[2777,"false","限定詞","うその","I have false nearsightedness.","私は仮性近視です。"],
+[2778,"these","限定詞","これら","Who painted these pictures?","この絵は誰が描いたの？"],
+[2779,"which","限定詞","どちら","Tell me which you want.","どちらがいいか教えてください。"],
+[2780,"latter","限定詞","後の・後者","The former is better than the latter.","前者の方が後者よりも良い。"],
+[2781,"those","限定詞","あれら","Who are those guys?","その人たちは誰ですか？"],
+[2782,"another","限定詞","もう一つの・別の","Please take another one.","もう一つどうぞ。"],
+[2783,"some","限定詞","いくらかの・ある","You have some books.","あなたは本を何冊か持っています。"],
+[2784,"my","限定詞","私の","That wasn't my intention.","それは私の本意ではない。"],
+[2785,"former","限定詞","前の・前者","Tom is former CIA.","トムは元CIAです。"],
+[2786,"each","限定詞","各・1つ1つの","Avoid each other's society.","互いの社会を避ける。"],
+[2787,"their","限定詞","彼らの・彼女らの","This is their house.","ここは彼らの家です。"],
+[2788,"every","限定詞","すべての・毎〜","Take every possible means.","ありとあらゆる手段をとる。"],
+[2789,"several","限定詞","いくつかの・それぞれの","He came several times.","彼は何度も来た。"],
+[2790,"than","接続詞","〜よりも","Better late than never.","遅くてもやらないよりはまし。"],
+[2791,"although","接続詞","〜だけれども","Jack was looking well, although tired.","ジャックは疲れてはいるものの、元気そうだった。"],
+[2792,"so","接続詞","その理由で","Nancy looks so tired.","ナンシーはとても疲れているようだ。"],
+[2793,"nor","接続詞","〜もまた〜でない","Neither fish nor fowl.","魚でもなければ鳥でもない。"],
+[2794,"until","接続詞","〜まで","Wait until further notice.","次の通知が来るまで待ってください。"],
+[2795,"and","接続詞","〜と・・・","Money comes and goes.","金は天下の回りもの。"],
+[2796,"because","接続詞","なぜなら〜だから","That's because they're vicious.","それは彼らが悪質だからだ。"],
+[2797,"whereas","接続詞","〜である一方で","I am poor, whereas my brothers are rich.","私は貧乏だが、兄弟は金持ちだ。"],
+[2798,"whilst","接続詞","〜の間に","You shouldn't smoke whilst you work.","仕事中はタバコを吸うべきではありません。"],
+[2799,"till","接続詞","〜まで","Please wait till noon.","正午までお待ちください。"],
+[2800,"however","接続詞","しかしながら・どんな〜にでも","Do however you like.","あなたの好きなようにしてください。"],
+[2801,"but","接続詞","でも","My, but you're nice.","あら、でもあなたは素敵ね。"],
+[2802,"while","接続詞","〜の間に","He sang while working.","彼は仕事中に歌っていた。"],
+[2803,"if","接続詞","もし〜なら・〜かどうか","Correct errors, if any.","誤りがあれば訂正しましょう。"],
+[2804,"or","接続詞","あるいは・そうでなければ","Smoking or non smoking?","喫煙者か禁煙者か？"],
+[2805,"whether","接続詞","〜かどうか","I wonder whether you understand.","ご理解いただけましたでしょうか。"],
+[2806,"unless","接続詞","〜でない限り","Let's go out unless it rains.","雨が降らなければ出かけよう。"],
+[2807,"a","冠詞","1つの","Oh, there's a butterfly!","あっ、蝶がいるよ！"],
+[2808,"may","助動詞","〜してもよい・〜かもしれない","You may go anywhere.","どこに行ってもいいですよ。"],
+[2809,"might","助動詞","〜かもしれない・〜してもよい","It might rain tomorrow.","明日は雨が降るかもしれません。"],
+[2810,"have","助動詞","持っている","I have a dream.","私には夢があります。"],
+[2811,"would","助動詞","〜だろう・〜したい","That would be lovely.","それは素敵ですね。"],
+[2812,"ought","助動詞","〜するべきである","We ought to win.","私たちは勝たなければなりません。"],
+[2813,"shall","助動詞","〜すべきである・〜しましょうか","What shall we play?","何をやろうか？"],
+[2814,"will","助動詞","〜するつもりである・〜でしょう","This will cost 30 euros.","30ユーロかかります。"],
+[2815,"can","助動詞","〜することができる","You can do it.","あなたならできますよ。"],
+[2816,"must","助動詞","〜しなければならない・〜に違いない","You must work more.","あなたはもっと働かなければなりません。"],
+[2817,"should","助動詞","〜べきである","You should work hard.","あなたは一生懸命働くべきです。"],
+[2818,"zero","数字","ゼロ","Water has zero calories.","水はカロリーゼロです。"],
+[2819,"one","数字","1つ・人・もの","No one will know.","誰も知らないでしょう。"],
+[2820,"two","数字","2","There were two abstentions.","棄権者は2名でした。"],
+[2821,"three","数字","3","You have three cars.","あなたは車を3台持っています。"],
+[2822,"four","数字","4","You have four dogs.","あなたは犬を4匹飼っています。"],
+[2823,"five","数字","5","Jane has five handbags.","ジェーンはハンドバッグを5つ持っています。"],
+[2824,"six","数字","6","It's six o'clock already.","もう6時ですよ。"],
+[2825,"seven","数字","7","It is seven now.","今は7時です。"],
+[2826,"eight","数字","8","We are eight altogether.","全部で8人です。"],
+[2827,"nine","数字","9","It's already nine o'clock.","もう9時になりました。"],
+[2828,"ten","数字","10","We have ten cattle.","私たちは10頭の牛を飼っている。"],
+[2829,"eleven","数字","11","He has eleven children.","彼には11人の子供がいます。"],
+[2830,"twelve","数字","12","Then twelve o'clock came.","そして12時になりました。"],
+[2831,"thirteen","数字","13","We have thirteen clubs.","私たちは13人のクラブを持っています。"],
+[2832,"fourteen","数字","14","Layla was fourteen then.","レイラはその時14歳でした。"],
+[2833,"fifteen","数字","15","Please wait fifteen minutes.","15分お待ちください。"],
+[2834,"sixteen","数字","16","I'm sixteen years old.","私は16歳です。"],
+[2835,"seventeen","数字","17","She's seventeen years old.","彼女は17歳です。"],
+[2836,"eighteen","数字","18","I was eighteen then.","私は当時18歳です。"],
+[2837,"nineteen","数字","19","I am nineteen years old.","私は19歳です。"],
+[2838,"twenty","数字","20","He caught twenty butterflies.","彼は20匹の蝶を捕まえた。"],
+[2839,"thirty","数字","30","Tom is thirty now.","トムは今30歳です。"],
+[2840,"forty","数字","40","I'm forty years old.","私は40歳です。"],
+[2841,"fifty","数字","50","He had fifty dollars.","彼は50ドル持っていました。"],
+[2842,"sixty","数字","60","Sami lost sixty pounds.","サミは60ポンド痩せた。"],
+[2843,"seventy","数字","70","Tom lost seventy pounds.","トムは70ポンド痩せた。"],
+[2844,"eighty","数字","80","It weighs eighty kilograms.","重さは80キロです。"],
+[2845,"ninety","数字","90","We're back in ninety seconds.","我々は90秒後に戻ってきます。"],
+[2846,"hundred","数字","100","We walked another hundred yards.","私達はもう100ヤード歩きました。"],
+[2847,"thousand","数字","1000","Twenty thousand yen, please.","2万円お願いします。"],
+[2848,"million","数字","百万","Almost sixty-nine million people voted.","およそ6900万人が投票しました。"],
+[2849,"billion","数字","十億","One billion people speak English.","10億人が英語を話します。"],
+[2850,"trillion","数字","兆","Galaxies contain from tens of millions to trillions of stars.","銀河には数千万から数兆個の星があります。"]
+];
+
+// ===== STATE =====
+let playlist = [...ALL_DATA]; // current filtered/shuffled list
+let currentIdx = 0;
+let isPlaying = false;
+
+// ===== RANGE =====
+function applyRange() {
+  const from = parseInt(document.getElementById('rangeFrom').value);
+  const to = parseInt(document.getElementById('rangeTo').value);
+  playlist = ALL_DATA.filter(w => w[0] >= from && w[0] <= to);
+  if (document.getElementById('shuffleChk').checked) shufflePlaylist();
+  currentIdx = 0;
+  showWord(0);
+  document.getElementById('rangeInfo').textContent = `${playlist.length}単語`;
+  stopAll();
+}
+
+function shufflePlaylist() {
+  for (let i = playlist.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
+  }
+}
+
+// ===== DISPLAY =====
+function showWord(idx) {
+  if (!playlist.length) return;
+  const w = playlist[idx];
+  document.getElementById('wordNumber').textContent = `No. ${w[0]} — ${idx + 1} / ${playlist.length}`;
+  document.getElementById('wordEn').textContent = w[1];
+  document.getElementById('wordPos').textContent = w[2];
+  document.getElementById('wordJp').textContent = w[3];
+  document.getElementById('exampleEn').textContent = w[4];
+  document.getElementById('exampleJp').textContent = w[5];
+  document.getElementById('currentInfo').textContent = `No.${w[0]} — ${w[1]}`;
+  const pct = playlist.length > 1 ? (idx / (playlist.length - 1)) * 100 : 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${idx + 1} / ${playlist.length}`;
+}
+
+function setReadingState(text, active) {
+  const el = document.getElementById('readingState');
+  document.getElementById('stateText').textContent = text;
+  el.classList.toggle('active', active);
+}
+
+// ===== SPEED =====
+function getSpeedJP() { return parseFloat(document.getElementById('speedJP').value); }
+function getSpeedEN() { return parseFloat(document.getElementById('speedEN').value); }
+function getPauseMs() { return parseInt(document.getElementById('pauseMs').value) || 600; }
+
+// ===== SESSION-BASED TTS ENGINE =====
+// Each play/resume gets a new sessionId. Every async callback checks its
+// captured sid against the current sessionId — if different, it's stale and ignored.
+// This completely prevents the multi-read bug caused by lingering callbacks.
+let sessionId = 0;
+
+function speak(text, lang, sid, onEnd) {
+  if (sid !== sessionId) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang;
+  utter.rate = (lang === 'ja-JP') ? getSpeedJP() : getSpeedEN();
+  utter.onend = () => { if (sid === sessionId) onEnd(); };
+  utter.onerror = (e) => {
+    // 'interrupted' fires when speechSynthesis.cancel() is called — not a real error
+    if (e.error !== 'interrupted' && sid === sessionId) onEnd();
+  };
+  speechSynthesis.speak(utter);
+}
+
+function wait(ms, sid, cb) {
+  setTimeout(() => { if (sid === sessionId) cb(); }, ms);
+}
+
+// ===== STEP-QUEUE PLAYBACK =====
+// Flat array of {type:'speak'|'pause', ...} steps, executed sequentially.
+function buildSteps(w) {
+  const p = getPauseMs();
+  return [
+    // Word ×1
+    {type:'speak', text:w[3], lang:'ja-JP', label:'🇯🇵 意味 (1/2)'},
+    {type:'pause', ms:p},
+    {type:'speak', text:w[2], lang:'ja-JP', label:'📝 品詞 (1/2)'},
+    {type:'pause', ms:p},
+    {type:'speak', text:w[1], lang:'en-US', label:'🇺🇸 English (1/2)'},
+    {type:'pause', ms:Math.round(p * 1.5)},
+    // Word ×2
+    {type:'speak', text:w[3], lang:'ja-JP', label:'🇯🇵 意味 (2/2)'},
+    {type:'pause', ms:p},
+    {type:'speak', text:w[2], lang:'ja-JP', label:'📝 品詞 (2/2)'},
+    {type:'pause', ms:p},
+    {type:'speak', text:w[1], lang:'en-US', label:'🇺🇸 English (2/2)'},
+    {type:'pause', ms:p * 2},
+    // Example ×1
+    {type:'speak', text:w[5], lang:'ja-JP', label:'🇯🇵 例文 (1/2)'},
+    {type:'pause', ms:p},
+    {type:'speak', text:w[4], lang:'en-US', label:'🇺🇸 例文 (1/2)'},
+    {type:'pause', ms:Math.round(p * 1.5)},
+    // Example ×2
+    {type:'speak', text:w[5], lang:'ja-JP', label:'🇯🇵 例文 (2/2)'},
+    {type:'pause', ms:p},
+    {type:'speak', text:w[4], lang:'en-US', label:'🇺🇸 例文 (2/2)'},
+    {type:'pause', ms:p * 2},
+  ];
+}
+
+function runSteps(steps, i, sid, onDone) {
+  if (sid !== sessionId) return;
+  if (i >= steps.length) { onDone(); return; }
+  const s = steps[i];
+  if (s.label) setReadingState(s.label, true);
+  if (s.type === 'speak') {
+    speak(s.text, s.lang, sid, () => runSteps(steps, i + 1, sid, onDone));
+  } else {
+    wait(s.ms, sid, () => runSteps(steps, i + 1, sid, onDone));
+  }
+}
+
+function playWord(idx, sid, onDone) {
+  if (sid !== sessionId || idx >= playlist.length) { onDone(); return; }
+  const w = playlist[idx];
+  showWord(idx);
+  currentIdx = idx;
+  runSteps(buildSteps(w), 0, sid, () => {
+    setReadingState('✓ DONE', false);
+    onDone();
+  });
+}
+
+function playFrom(idx) {
+  const sid = sessionId; // capture current session
+  if (idx >= playlist.length) {
+    if (document.getElementById('loopChk').checked) {
+      if (document.getElementById('shuffleChk').checked) { shufflePlaylist(); }
+      showWord(0);
+      playFrom(0);
+    } else {
+      isPlaying = false;
+      document.getElementById('playBtn').textContent = '▶ PLAY';
+      setReadingState('✓ COMPLETE', false);
+    }
+    return;
+  }
+  playWord(idx, sid, () => {
+    if (sid === sessionId && isPlaying) playFrom(idx + 1);
+  });
+}
+
+function togglePlay() {
+  if (isPlaying) {
+    isPlaying = false;
+    sessionId++; // invalidate all pending callbacks instantly
+    speechSynthesis.cancel();
+    document.getElementById('playBtn').textContent = '▶ PLAY';
+    setReadingState('PAUSED', false);
+  } else {
+    isPlaying = true;
+    sessionId++; // new clean session
+    document.getElementById('playBtn').textContent = '⏸ PAUSE';
+    setReadingState('...', true);
+    playFrom(currentIdx);
+  }
+}
+
+function stopAll() {
+  isPlaying = false;
+  sessionId++; // kills all pending callbacks
+  speechSynthesis.cancel();
+  document.getElementById('playBtn').textContent = '▶ PLAY';
+  setReadingState('STOPPED', false);
+}
+
+function prevWord() {
+  const wasPlaying = isPlaying;
+  isPlaying = false;
+  sessionId++;
+  speechSynthesis.cancel();
+  currentIdx = Math.max(0, currentIdx - 1);
+  showWord(currentIdx);
+  document.getElementById('playBtn').textContent = '▶ PLAY';
+  if (wasPlaying) { isPlaying = true; sessionId++; document.getElementById('playBtn').textContent = '⏸ PAUSE'; playFrom(currentIdx); }
+}
+
+function nextWord() {
+  const wasPlaying = isPlaying;
+  isPlaying = false;
+  sessionId++;
+  speechSynthesis.cancel();
+  currentIdx = Math.min(playlist.length - 1, currentIdx + 1);
+  showWord(currentIdx);
+  document.getElementById('playBtn').textContent = '▶ PLAY';
+  if (wasPlaying) { isPlaying = true; sessionId++; document.getElementById('playBtn').textContent = '⏸ PAUSE'; playFrom(currentIdx); }
+}
+
+// ===== INIT =====
+function init() {
+  applyRange();
+  showWord(0);
+}
+
+init();
+</script>
+</body>
+</html>
